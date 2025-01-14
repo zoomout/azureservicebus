@@ -31,7 +31,7 @@ public class AzureServiceBusConsumer {
         receiverClient.receiveMessages().onBackpressureBuffer(1000)
                 .doOnNext(message -> {
                             RECEIVED_MESSAGES.add(message.getBody().toString());
-                            LOGGER.info("Received message: {}", message);
+                            LOGGER.info("Received message: {}", message.getBody());
                         }
                 )
                 .subscribe();
