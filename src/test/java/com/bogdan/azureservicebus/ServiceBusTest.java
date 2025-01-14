@@ -46,12 +46,16 @@ public class ServiceBusTest {
         RestAssured.given().body(message2)
                 .when().post("/send")
                 .then().statusCode(202);
-        String body = RestAssured
-                .when().get("/receive/2")
-                .then().statusCode(200)
-                .and()
-                .extract().body().asString();
-        assertThat(body).isEqualTo("[\"" + message1 + "\",\"" + message2 + "\"]");
+
+        Awaitility.await().atMost(Duration.ofSeconds(10)).untilAsserted(() -> {
+            String body = RestAssured
+                    .when().get("/receive/2")
+                    .then().statusCode(200)
+                    .and()
+                    .extract().body().asString();
+            assertThat(body).isEqualTo("[\"" + message1 + "\",\"" + message2 + "\"]");
+        });
+
     }
 
     @AfterAll

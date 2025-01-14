@@ -1,22 +1,23 @@
 package com.bogdan.azureservicebus;
 
 import com.azure.messaging.servicebus.ServiceBusClientBuilder;
-import com.azure.messaging.servicebus.ServiceBusReceiverClient;
+import com.azure.messaging.servicebus.ServiceBusReceiverAsyncClient;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
-import java.time.Duration;
 import java.util.List;
-import java.util.stream.Collectors;
+import java.util.concurrent.CopyOnWriteArrayList;
 
 @Service
 public class AzureServiceBusConsumer {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(AzureServiceBusConsumer.class);
 
-    private final ServiceBusReceiverClient receiverClient;
+    private final ServiceBusReceiverAsyncClient receiverClient;
+
+    private static final List<String> RECEIVED_MESSAGES = new CopyOnWriteArrayList<>();
 
     public AzureServiceBusConsumer(
             @Value("${azure.servicebus.connection-string}") String connectionString,
@@ -26,17 +27,18 @@ public class AzureServiceBusConsumer {
                 .connectionString(connectionString)
                 .receiver()
                 .queueName(queueName)
-                .buildClient();
+                .buildAsyncClient();
+        receiverClient.receiveMessages().onBackpressureBuffer(1000)
+                .doOnNext(message -> {
+                            RECEIVED_MESSAGES.add(message.getBody().toString());
+                            LOGGER.info("Received message: {}", message);
+                        }
+                )
+                .subscribe();
     }
 
     public List<String> receiveMessages(int count) {
-        return receiverClient.receiveMessages(count, Duration.ofSeconds(1)).stream()
-                .peek(message -> {
-                    LOGGER.info("Received message: {}", message);
-                    receiverClient.complete(message);
-                })
-                .map(m -> m.getBody().toString())
-                .collect(Collectors.toList());
+        return RECEIVED_MESSAGES.stream().limit(count).toList();
     }
 
     public void close() {
