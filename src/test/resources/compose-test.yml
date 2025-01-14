@@ -1,0 +1,29 @@
+name: microsoft-azure-servicebus-emulator
+services:
+  emulator:
+    image: mcr.microsoft.com/azure-messaging/servicebus-emulator:latest
+    volumes:
+      - "./servicebus/Config.json:/ServiceBus_Emulator/ConfigFiles/Config.json"
+    ports:
+      - "5672:5672"
+    environment:
+      SQL_SERVER: sqledge
+      MSSQL_SA_PASSWORD: sqledgePassword#128
+      ACCEPT_EULA: "Y"
+    depends_on:
+      - sqledge
+    networks:
+      sb-emulator:
+        aliases:
+          - "sb-emulator"
+  sqledge:
+    image: "mcr.microsoft.com/mssql/server:2022-latest"
+    networks:
+      sb-emulator:
+        aliases:
+          - "sqledge"
+    environment:
+      ACCEPT_EULA: "1"
+      MSSQL_SA_PASSWORD: sqledgePassword#128
+networks:
+  sb-emulator:
