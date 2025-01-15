@@ -52,19 +52,7 @@
                 ]
               },
               {
-                "Name": "subscription.2",
-                "Properties": {
-                  "DeadLetteringOnMessageExpiration": false,
-                  "DefaultMessageTimeToLive": "PT1H",
-                  "LockDuration": "PT1M",
-                  "MaxDeliveryCount": 10,
-                  "ForwardDeadLetteredMessagesTo": "subscription.3",
-                  "ForwardTo": "",
-                  "RequiresSession": false
-                }
-              },
-              {
-                "Name": "subscription.3",
+                "Name": "subscription.all",
                 "Properties": {
                   "DeadLetteringOnMessageExpiration": false,
                   "DefaultMessageTimeToLive": "PT1H",
@@ -74,6 +62,29 @@
                   "ForwardTo": "",
                   "RequiresSession": false
                 }
+              },
+              {
+                "Name": "subscription.dead",
+                "Properties": {
+                  "DeadLetteringOnMessageExpiration": false,
+                  "DefaultMessageTimeToLive": "PT1H",
+                  "LockDuration": "PT1M",
+                  "MaxDeliveryCount": 10,
+                  "ForwardDeadLetteredMessagesTo": "",
+                  "ForwardTo": "",
+                  "RequiresSession": false
+                },
+                "Rules": [
+                  {
+                    "Name": "app-prop-filter-1",
+                    "Properties": {
+                      "FilterType": "Correlation",
+                      "CorrelationFilter": {
+                        "CorrelationId": "deadLetterQueue1"
+                      }
+                    }
+                  }
+                ]
               }
             ]
           }

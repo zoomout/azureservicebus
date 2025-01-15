@@ -3,6 +3,7 @@ package com.bogdan.azureservicebus;
 import io.restassured.RestAssured;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
@@ -11,6 +12,7 @@ import org.testcontainers.containers.ComposeContainer;
 
 import java.io.File;
 import java.time.Duration;
+import java.time.Instant;
 import java.util.concurrent.TimeUnit;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -22,10 +24,14 @@ public class ServiceBusTest {
     public static ComposeContainer TEST_COMPOSE = new ComposeContainer(new File("src/test/resources/compose-test.yml"))
             .withExposedService("emulator", 5672);
 
+    @BeforeAll
+    static void setupCompose() {
+        RestAssured.baseURI = "http://localhost:8080";
+        TEST_COMPOSE.start();
+    }
+
     @BeforeEach
     void setupServiceBus() {
-        TEST_COMPOSE.start();
-        RestAssured.baseURI = "http://localhost:8080";
         Awaitility.await().atMost(Duration.ofSeconds(10)).untilAsserted(() -> {
             RestAssured
                     .when().get("/actuator/health")
@@ -38,7 +44,27 @@ public class ServiceBusTest {
 
     @Test
     @Timeout(value = 1, unit = TimeUnit.MINUTES)
-    void testServiceBusQueue() {
+    void test0ServiceBusError() {
+        String message = "ErrorMessage";
+
+        RestAssured.given().body(message)
+                .when().post("/messages/error")
+                .then().statusCode(202);
+
+        Awaitility.await().atMost(Duration.ofSeconds(10)).untilAsserted(() -> {
+            String bodyAll = RestAssured
+                    .when().get("/messages/dead")
+                    .then().statusCode(200)
+                    .and()
+                    .extract().body().asString();
+            assertThat(bodyAll).isEqualTo("[\"" + message + "\"]");
+        });
+
+    }
+
+    @Test
+    @Timeout(value = 1, unit = TimeUnit.MINUTES)
+    void test1ServiceBusQueue() {
         String message1 = "Test message 1";
         String message2 = "Test message 2";
 
@@ -63,7 +89,7 @@ public class ServiceBusTest {
 
     @Test
     @Timeout(value = 1, unit = TimeUnit.MINUTES)
-    void testServiceBusTopic() {
+    void test2ServiceBusTopic() {
         String message1 = "Test message topic 1";
         String message2 = "Test message topic 2";
 
@@ -95,21 +121,25 @@ public class ServiceBusTest {
 
     @Test
     @Timeout(value = 1, unit = TimeUnit.MINUTES)
-    void testServiceBusError() {
-        String message = "ErrorMessage";
+    void test3ServiceBusErrorRetryDeferred() {
+        String message = "ErrorMessageDeferred";
 
+        Instant start = Instant.now();
         RestAssured.given().body(message)
-                .when().post("/messages/error")
+                .when().post("/messages/errorDeferred")
                 .then().statusCode(202);
 
         Awaitility.await().atMost(Duration.ofSeconds(10)).untilAsserted(() -> {
             String bodyAll = RestAssured
-                    .when().get("/messages/dead")
+                    .when().get("/messages/all")
                     .then().statusCode(200)
                     .and()
                     .extract().body().asString();
-            assertThat(bodyAll).isEqualTo("[\""+message+"\"]");
+
+            assertThat(bodyAll).isEqualTo("[\"" + message + "+2Sec" + "\"]");
         });
+        Instant end = Instant.now();
+        assertThat(end).isAfter(start.plusSeconds(2));
 
     }
 

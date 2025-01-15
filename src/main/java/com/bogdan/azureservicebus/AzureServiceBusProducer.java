@@ -8,6 +8,8 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
+import java.time.OffsetDateTime;
+
 @Service
 public class AzureServiceBusProducer {
 
@@ -46,6 +48,15 @@ public class AzureServiceBusProducer {
         }
         senderTopicClient.sendMessage(message);
         LOGGER.info("Message sent to topic: {}", messageContent);
+    }
+
+    public void sendMessageToTopicDeferred(String messageContent, String correlationId) {
+        ServiceBusMessage message = new ServiceBusMessage(messageContent + "+2Sec");
+        if (correlationId != null) {
+            message.setCorrelationId(correlationId);
+        }
+        senderTopicClient.scheduleMessage(message, OffsetDateTime.now().plusSeconds(2));
+        LOGGER.info("Deferred message sent to topic: {}", messageContent);
     }
 
 }
