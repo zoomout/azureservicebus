@@ -52,7 +52,7 @@ public class ServiceBusTest {
 
         Awaitility.await().atMost(Duration.ofSeconds(10)).untilAsserted(() -> {
             String body = RestAssured
-                    .when().get("/messages/2")
+                    .when().get("/messages")
                     .then().statusCode(200)
                     .and()
                     .extract().body().asString();
