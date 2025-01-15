@@ -93,6 +93,26 @@ public class ServiceBusTest {
 
     }
 
+    @Test
+    @Timeout(value = 1, unit = TimeUnit.MINUTES)
+    void testServiceBusError() {
+        String message = "ErrorMessage";
+
+        RestAssured.given().body(message)
+                .when().post("/messages/error")
+                .then().statusCode(202);
+
+        Awaitility.await().atMost(Duration.ofSeconds(10)).untilAsserted(() -> {
+            String bodyAll = RestAssured
+                    .when().get("/messages/dead")
+                    .then().statusCode(200)
+                    .and()
+                    .extract().body().asString();
+            assertThat(bodyAll).isEqualTo("[\""+message+"\"]");
+        });
+
+    }
+
     @AfterAll
     static void tearDownServiceBus() {
         TEST_COMPOSE.stop();

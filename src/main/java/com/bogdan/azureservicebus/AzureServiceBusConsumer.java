@@ -18,10 +18,12 @@ public class AzureServiceBusConsumer {
     private final ServiceBusReceiverAsyncClient receiverQueueClient;
     private final ServiceBusReceiverAsyncClient receiverTopicSub1Client;
     private final ServiceBusReceiverAsyncClient receiverTopicSub2Client;
+    private final ServiceBusReceiverAsyncClient receiverTopicSub3Client;
 
     private static final List<String> RECEIVED_MESSAGES_QUEUE = new CopyOnWriteArrayList<>();
     private static final List<String> RECEIVED_MESSAGES_TOPIC_1 = new CopyOnWriteArrayList<>();
     private static final List<String> RECEIVED_MESSAGES_TOPIC_ALL = new CopyOnWriteArrayList<>();
+    private static final List<String> RECEIVED_MESSAGES_TOPIC_DEAD_LETTER_QUEUE = new CopyOnWriteArrayList<>();
 
     public AzureServiceBusConsumer(
             @Value("${azure.servicebus.connection-string}") String connectionString,
@@ -40,6 +42,7 @@ public class AzureServiceBusConsumer {
                         }
                 )
                 .subscribe();
+
         this.receiverTopicSub1Client = new ServiceBusClientBuilder()
                 .connectionString(connectionString)
                 .receiver()
@@ -62,8 +65,29 @@ public class AzureServiceBusConsumer {
                 .buildAsyncClient();
         receiverTopicSub2Client.receiveMessages().onBackpressureBuffer(1000)
                 .doOnNext(message -> {
-                            RECEIVED_MESSAGES_TOPIC_ALL.add(message.getBody().toString());
-                            LOGGER.info("Received message from topic sub 2: {}", message.getBody());
+                            String mess = message.getBody().toString();
+                            if (mess.equals("ErrorMessage")) {
+                                throw new RuntimeException("Oh no!");
+                            }
+                            RECEIVED_MESSAGES_TOPIC_ALL.add(mess);
+                            LOGGER.info("Received message from topic sub 2: {}", mess);
+                        }
+                )
+                .doOnError(e -> {
+                    LOGGER.error("Received error from topic sub 2", e);
+                })
+                .subscribe();
+
+        this.receiverTopicSub3Client = new ServiceBusClientBuilder()
+                .connectionString(connectionString)
+                .receiver()
+                .topicName(topicName)
+                .subscriptionName("subscription.3")
+                .buildAsyncClient();
+        receiverTopicSub3Client.receiveMessages().onBackpressureBuffer(1000)
+                .doOnNext(message -> {
+                            RECEIVED_MESSAGES_TOPIC_DEAD_LETTER_QUEUE.add(message.getBody().toString());
+                            LOGGER.info("Received message from dead letter queue: {}", message.getBody());
                         }
                 )
                 .subscribe();
@@ -76,6 +100,9 @@ public class AzureServiceBusConsumer {
     public List<String> receiveMessagesTopic(String subId) {
         if ("all".equals(subId)) {
             return RECEIVED_MESSAGES_TOPIC_ALL;
+        }
+        if ("dead".equals(subId)) {
+            return RECEIVED_MESSAGES_TOPIC_DEAD_LETTER_QUEUE;
         }
         return RECEIVED_MESSAGES_TOPIC_1;
     }
