@@ -19,16 +19,32 @@ public class MessageController {
         this.azureServiceBusConsumer = azureServiceBusConsumer;
     }
 
-
-    @PostMapping("/send")
+    @PostMapping("/messages")
     public ResponseEntity<Void> sendMessage(@RequestBody String message) {
-        azureServiceBusProducer.sendMessage(message);
+        azureServiceBusProducer.sendMessageToQueue(message);
         return ResponseEntity.accepted().build();
     }
 
-    @GetMapping("/receive/{count}")
-    public ResponseEntity<List<String>> getMessages(@PathVariable Integer count) {
-        return ResponseEntity.ok(azureServiceBusConsumer.receiveMessages(count));
+    @PostMapping("/messages/{correlationId}")
+    public ResponseEntity<Void> sendMessage(@RequestBody String message, @PathVariable String correlationId) {
+        azureServiceBusProducer.sendMessageToTopic(message, correlationId);
+        return ResponseEntity.accepted().build();
+    }
+
+    @GetMapping("/messages")
+    public ResponseEntity<List<String>> getMessages() {
+        return ResponseEntity.ok(azureServiceBusConsumer.receiveMessagesQueue());
+    }
+
+    @GetMapping("/messages/{subId}")
+    public ResponseEntity<List<String>> getMessages(@PathVariable String subId) {
+        return ResponseEntity.ok(azureServiceBusConsumer.receiveMessagesTopic(subId));
+    }
+
+    @DeleteMapping("/messages")
+    public ResponseEntity<Void> deleteMessages() {
+        azureServiceBusConsumer.deleteMessages();
+        return ResponseEntity.ok().build();
     }
 
 }

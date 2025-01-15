@@ -31,29 +31,64 @@ public class ServiceBusTest {
                     .when().get("/actuator/health")
                     .then().statusCode(200);
         });
+        RestAssured
+                .when().delete("/messages")
+                .then().statusCode(200);
     }
 
     @Test
     @Timeout(value = 1, unit = TimeUnit.MINUTES)
-    void testServiceBus() {
+    void testServiceBusQueue() {
         String message1 = "Test message 1";
         String message2 = "Test message 2";
 
         RestAssured.given().body(message1)
-                .when().post("/send")
+                .when().post("/messages")
                 .then().statusCode(202);
 
         RestAssured.given().body(message2)
-                .when().post("/send")
+                .when().post("/messages")
                 .then().statusCode(202);
 
         Awaitility.await().atMost(Duration.ofSeconds(10)).untilAsserted(() -> {
             String body = RestAssured
-                    .when().get("/receive/2")
+                    .when().get("/messages/2")
                     .then().statusCode(200)
                     .and()
                     .extract().body().asString();
             assertThat(body).isEqualTo("[\"" + message1 + "\",\"" + message2 + "\"]");
+        });
+
+    }
+
+    @Test
+    @Timeout(value = 1, unit = TimeUnit.MINUTES)
+    void testServiceBusTopic() {
+        String message1 = "Test message topic 1";
+        String message2 = "Test message topic 2";
+
+        RestAssured.given().body(message1)
+                .when().post("/messages/correlationId1")
+                .then().statusCode(202);
+
+        RestAssured.given().body(message2)
+                .when().post("/messages/correlationIdAny")
+                .then().statusCode(202);
+
+        Awaitility.await().atMost(Duration.ofSeconds(10)).untilAsserted(() -> {
+            String bodyAll = RestAssured
+                    .when().get("/messages/all")
+                    .then().statusCode(200)
+                    .and()
+                    .extract().body().asString();
+            assertThat(bodyAll).isEqualTo("[\"" + message1 + "\",\"" + message2 + "\"]");
+
+            String bodyCorrelationId1 = RestAssured
+                    .when().get("/messages/correlationId1")
+                    .then().statusCode(200)
+                    .and()
+                    .extract().body().asString();
+            assertThat(bodyCorrelationId1).isEqualTo("[\"" + message1 + "\"]");
         });
 
     }

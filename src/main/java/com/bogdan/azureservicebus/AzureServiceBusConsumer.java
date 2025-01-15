@@ -15,34 +15,76 @@ public class AzureServiceBusConsumer {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(AzureServiceBusConsumer.class);
 
-    private final ServiceBusReceiverAsyncClient receiverClient;
+    private final ServiceBusReceiverAsyncClient receiverQueueClient;
+    private final ServiceBusReceiverAsyncClient receiverTopicSub1Client;
+    private final ServiceBusReceiverAsyncClient receiverTopicSub2Client;
 
-    private static final List<String> RECEIVED_MESSAGES = new CopyOnWriteArrayList<>();
+    private static final List<String> RECEIVED_MESSAGES_QUEUE = new CopyOnWriteArrayList<>();
+    private static final List<String> RECEIVED_MESSAGES_TOPIC_1 = new CopyOnWriteArrayList<>();
+    private static final List<String> RECEIVED_MESSAGES_TOPIC_ALL = new CopyOnWriteArrayList<>();
 
     public AzureServiceBusConsumer(
             @Value("${azure.servicebus.connection-string}") String connectionString,
-            @Value("${azure.servicebus.queue-name}") String queueName
+            @Value("${azure.servicebus.queue-name}") String queueName,
+            @Value("${azure.servicebus.topic-name}") String topicName
     ) {
-        this.receiverClient = new ServiceBusClientBuilder()
+        this.receiverQueueClient = new ServiceBusClientBuilder()
                 .connectionString(connectionString)
                 .receiver()
                 .queueName(queueName)
                 .buildAsyncClient();
-        receiverClient.receiveMessages().onBackpressureBuffer(1000)
+        receiverQueueClient.receiveMessages().onBackpressureBuffer(1000)
                 .doOnNext(message -> {
-                            RECEIVED_MESSAGES.add(message.getBody().toString());
-                            LOGGER.info("Received message: {}", message.getBody());
+                            RECEIVED_MESSAGES_QUEUE.add(message.getBody().toString());
+                            LOGGER.info("Received message from queue: {}", message.getBody());
+                        }
+                )
+                .subscribe();
+        this.receiverTopicSub1Client = new ServiceBusClientBuilder()
+                .connectionString(connectionString)
+                .receiver()
+                .topicName(topicName)
+                .subscriptionName("subscription.1")
+                .buildAsyncClient();
+        receiverTopicSub1Client.receiveMessages().onBackpressureBuffer(1000)
+                .doOnNext(message -> {
+                            RECEIVED_MESSAGES_TOPIC_1.add(message.getBody().toString());
+                            LOGGER.info("Received message from topic sub 1: {}", message.getBody());
+                        }
+                )
+                .subscribe();
+
+        this.receiverTopicSub2Client = new ServiceBusClientBuilder()
+                .connectionString(connectionString)
+                .receiver()
+                .topicName(topicName)
+                .subscriptionName("subscription.2")
+                .buildAsyncClient();
+        receiverTopicSub2Client.receiveMessages().onBackpressureBuffer(1000)
+                .doOnNext(message -> {
+                            RECEIVED_MESSAGES_TOPIC_ALL.add(message.getBody().toString());
+                            LOGGER.info("Received message from topic sub 2: {}", message.getBody());
                         }
                 )
                 .subscribe();
     }
 
-    public List<String> receiveMessages(int count) {
-        return RECEIVED_MESSAGES.stream().limit(count).toList();
+    public List<String> receiveMessagesQueue() {
+        return RECEIVED_MESSAGES_QUEUE;
     }
 
-    public void close() {
-        receiverClient.close();
+    public List<String> receiveMessagesTopic(String subId) {
+        if ("all".equals(subId)) {
+            return RECEIVED_MESSAGES_TOPIC_ALL;
+        }
+        return RECEIVED_MESSAGES_TOPIC_1;
     }
+
+    public void deleteMessages() {
+        RECEIVED_MESSAGES_QUEUE.clear();
+        RECEIVED_MESSAGES_TOPIC_1.clear();
+        RECEIVED_MESSAGES_TOPIC_ALL.clear();
+    }
+
 }
 
