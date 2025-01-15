@@ -1,0 +1,65 @@
+name: microsoft-azure-servicebus-emulator
+services:
+  emulator:
+    image: mcr.microsoft.com/azure-messaging/servicebus-emulator:latest
+    volumes:
+      - "./src/test/resources/servicebus/Config.json:/ServiceBus_Emulator/ConfigFiles/Config.json"
+    ports:
+      - "5672:5672"
+    environment:
+      SQL_SERVER: sqledge
+      MSSQL_SA_PASSWORD: "sqledgePassword#128"
+      ACCEPT_EULA: "Y"
+    depends_on:
+      sqledge:
+        condition: service_healthy
+    networks:
+      sb-emulator:
+        aliases:
+          - "sb-emulator"
+
+  sqledge:
+    image: "mcr.microsoft.com/mssql/server:2022-latest"
+    environment:
+      ACCEPT_EULA: "1"
+      MSSQL_SA_PASSWORD: "sqledgePassword#128"
+    networks:
+      sb-emulator:
+        aliases:
+          - "sqledge"
+    volumes:
+      - "./scripts/:/scripts/"
+    healthcheck:
+      test: [ "CMD", "/bin/bash", "-c", "/scripts/check_log.sh", '"The tempdb database has"']
+      interval: 5s
+      retries: 10
+      start_period: 1s
+      timeout: 5s
+
+  app:
+    platform: linux/amd64
+    build:
+      context: ./
+      dockerfile: ./Dockerfile
+    ports:
+      - "8080:8080"
+    networks:
+      sb-emulator:
+        aliases:
+          - "app"
+    depends_on:
+      - emulator
+    environment:
+      EMULATOR_HOST: sb-emulator
+      EMULATOR_PORT: 5672
+    volumes:
+      - "./scripts/:/var/scripts/"
+    healthcheck:
+      test: [ "CMD", "/bin/bash", "-c", "/var/scripts/check_log.sh", '"Started AzureservicebusApplication"' ]
+      interval: 5s
+      retries: 10
+      start_period: 1s
+      timeout: 5s
+
+networks:
+  sb-emulator:

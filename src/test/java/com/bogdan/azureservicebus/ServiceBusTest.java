@@ -2,11 +2,7 @@ package com.bogdan.azureservicebus;
 
 import io.restassured.RestAssured;
 import org.awaitility.Awaitility;
-import org.junit.jupiter.api.AfterAll;
-import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.Timeout;
+import org.junit.jupiter.api.*;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.testcontainers.containers.ComposeContainer;
 
@@ -18,10 +14,10 @@ import java.util.concurrent.TimeUnit;
 import static org.assertj.core.api.Assertions.assertThat;
 
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.DEFINED_PORT)
+@TestMethodOrder(MethodOrderer.MethodName.class)
 public class ServiceBusTest {
 
-
-    public static ComposeContainer TEST_COMPOSE = new ComposeContainer(new File("src/test/resources/compose-test.yml"))
+    public static ComposeContainer TEST_COMPOSE = new ComposeContainer(new File("compose-test.yml"))
             .withExposedService("emulator", 5672);
 
     @BeforeAll

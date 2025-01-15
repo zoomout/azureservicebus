@@ -73,6 +73,10 @@ public class AzureServiceBusConsumer {
                 .buildAsyncClient();
         receiverTopicSubAllClient.receiveMessages().onBackpressureBuffer(1000)
                 .flatMap(message -> {
+                    if (message.getCorrelationId().equals("deadLetterQueue1")) {
+                        LOGGER.info("Skipping dead letter message in ALL queue");
+                        return Mono.empty();
+                    }
                     String mess = message.getBody().toString();
                     if (mess.equals("ErrorMessage")) {
                         LOGGER.error("Oh no! Sending to dead letter queue.");
@@ -134,4 +138,3 @@ public class AzureServiceBusConsumer {
     }
 
 }
-
