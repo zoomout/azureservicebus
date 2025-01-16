@@ -1,0 +1,105 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: servicebus-config
+  namespace: sb-emulator
+data:
+  Config.json: |
+    {
+      "UserConfig": {
+        "Namespaces": [
+          {
+            "Name": "sbemulatorns",
+            "Queues": [
+              {
+                "Name": "test-queue-1",
+                "Properties": {
+                  "DeadLetteringOnMessageExpiration": false,
+                  "DefaultMessageTimeToLive": "PT1H",
+                  "DuplicateDetectionHistoryTimeWindow": "PT20S",
+                  "ForwardDeadLetteredMessagesTo": "",
+                  "ForwardTo": "",
+                  "LockDuration": "PT1M",
+                  "MaxDeliveryCount": 10,
+                  "RequiresDuplicateDetection": false,
+                  "RequiresSession": false
+                }
+              }
+            ],
+            "Topics": [
+              {
+                "Name": "topic.1",
+                "Properties": {
+                  "DefaultMessageTimeToLive": "PT1H",
+                  "DuplicateDetectionHistoryTimeWindow": "PT20S",
+                  "RequiresDuplicateDetection": false
+                },
+                "Subscriptions": [
+                  {
+                    "Name": "subscription.1",
+                    "Properties": {
+                      "DeadLetteringOnMessageExpiration": false,
+                      "DefaultMessageTimeToLive": "PT1H",
+                      "LockDuration": "PT1M",
+                      "MaxDeliveryCount": 10,
+                      "ForwardDeadLetteredMessagesTo": "",
+                      "ForwardTo": "",
+                      "RequiresSession": false
+                    },
+                    "Rules": [
+                      {
+                        "Name": "app-prop-filter-1",
+                        "Properties": {
+                          "FilterType": "Correlation",
+                          "CorrelationFilter": {
+                            "CorrelationId": "correlationId1"
+                          }
+                        }
+                      }
+                    ]
+                  },
+                  {
+                    "Name": "subscription.all",
+                    "Properties": {
+                      "DeadLetteringOnMessageExpiration": false,
+                      "DefaultMessageTimeToLive": "PT1H",
+                      "LockDuration": "PT1M",
+                      "MaxDeliveryCount": 10,
+                      "ForwardDeadLetteredMessagesTo": "",
+                      "ForwardTo": "",
+                      "RequiresSession": false
+                    }
+                  },
+                  {
+                    "Name": "subscription.dead",
+                    "Properties": {
+                      "DeadLetteringOnMessageExpiration": false,
+                      "DefaultMessageTimeToLive": "PT1H",
+                      "LockDuration": "PT1M",
+                      "MaxDeliveryCount": 10,
+                      "ForwardDeadLetteredMessagesTo": "",
+                      "ForwardTo": "",
+                      "RequiresSession": false
+                    },
+                    "Rules": [
+                      {
+                        "Name": "app-prop-filter-1",
+                        "Properties": {
+                          "FilterType": "Correlation",
+                          "CorrelationFilter": {
+                            "CorrelationId": "deadLetterQueue1"
+                          }
+                        }
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          }
+        ],
+        "Logging": {
+          "Type": "File"
+        }
+      }
+    }

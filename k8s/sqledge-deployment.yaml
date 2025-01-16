@@ -1,0 +1,26 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: sqledge
+  namespace: sb-emulator
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: sqledge
+  template:
+    metadata:
+      labels:
+        app: sqledge
+    spec:
+      containers:
+        - name: sqledge
+          image: mcr.microsoft.com/mssql/server:2022-latest
+          env:
+            - name: ACCEPT_EULA
+              value: "1"
+            - name: MSSQL_SA_PASSWORD
+              value: "sqledgePassword#128"
+          ports:
+            - containerPort: 1433
+

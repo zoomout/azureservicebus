@@ -1,26 +1,26 @@
 # azureservicebus
 
 ## Run tests
-```
- mvn clean test
+```bash
+mvn clean test
 ```
 
 ## Build
-```
+```bash
 mvn clean package -DskipTests=true
 ```
 
 ## Start docker app
-```
- docker compose -f ./compose-test-app.yml up --build -d
+```bash
+docker compose -f ./compose-test-app.yml up --build -d
 ```
 
 ## Stop docker app
-```
- docker compose -f ./compose-test-app.yml down -v
+```bash
+docker compose -f ./compose-test-app.yml down -v
 ```
 
 ## Check docker container health check log
-```
+```bash
 docker inspect --format='{{json .State.Health}}' <container_name> | jq
 ```

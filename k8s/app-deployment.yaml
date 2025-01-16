@@ -1,0 +1,26 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: app
+  namespace: sb-emulator
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: app
+  template:
+    metadata:
+      labels:
+        app: app
+    spec:
+      containers:
+        - name: app
+          image: microsoft-azure-servicebus-emulator-app:latest
+          imagePullPolicy: Never
+          ports:
+            - containerPort: 8080
+          env:
+            - name: EMULATOR_HOST
+              value: servicebus-emulator
+            - name: EMULATOR_PORT
+              value: "5672"

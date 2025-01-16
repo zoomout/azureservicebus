@@ -1,0 +1,35 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: servicebus-emulator
+  namespace: sb-emulator
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: servicebus-emulator
+  template:
+    metadata:
+      labels:
+        app: servicebus-emulator
+    spec:
+      containers:
+        - name: servicebus-emulator
+          image: mcr.microsoft.com/azure-messaging/servicebus-emulator:latest
+          ports:
+            - containerPort: 5672
+          volumeMounts:
+            - name: config-volume
+              mountPath: /ServiceBus_Emulator/ConfigFiles/Config.json
+              subPath: Config.json
+          env:
+            - name: SQL_SERVER
+              value: sqledge
+            - name: MSSQL_SA_PASSWORD
+              value: "sqledgePassword#128"
+            - name: ACCEPT_EULA
+              value: "Y"
+      volumes:
+        - name: config-volume
+          configMap:
+            name: servicebus-config
