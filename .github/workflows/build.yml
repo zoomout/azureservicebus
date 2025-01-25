@@ -1,0 +1,37 @@
+name: Maven Build on Pull Request
+
+# Trigger the workflow on pull requests
+on:
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  build:
+    # Define the environment where the job runs
+    runs-on: ubuntu-latest
+
+    steps:
+      # Step 1: Check out the code from the repository
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      # Step 2: Set up Java (choose the Java version required for your project)
+      - name: Set up JDK
+        uses: actions/setup-java@v3
+        with:
+          distribution: 'temurin' # Use 'temurin', 'zulu', or others as needed
+          java-version: '21' # Set the Java version you want (e.g., 8, 11, 17)
+
+      # Step 3: Cache Maven dependencies
+      - name: Cache Maven dependencies
+        uses: actions/cache@v3
+        with:
+          path: ~/.m2/repository
+          key: ${{ runner.os }}-maven-${{ hashFiles('**/pom.xml') }}
+          restore-keys: |
+            ${{ runner.os }}-maven-
+
+      # Step 4: Run Maven build
+      - name: Build with Maven
+        run: mvn clean install
