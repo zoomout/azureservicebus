@@ -10,6 +10,7 @@ import reactor.core.publisher.Mono;
 import reactor.core.scheduler.Schedulers;
 
 import java.util.List;
+import java.util.Objects;
 import java.util.concurrent.CopyOnWriteArrayList;
 
 @Service
@@ -44,6 +45,9 @@ public class AzureServiceBusConsumer {
                             LOGGER.info("Received message from queue: {}", message.getBody());
                         }
                 )
+                .doOnError(e -> {
+                    LOGGER.error("Received error from queue", e);
+                })
                 .subscribeOn(Schedulers.boundedElastic())
                 .subscribe();
 
@@ -73,7 +77,7 @@ public class AzureServiceBusConsumer {
                 .buildAsyncClient();
         receiverTopicSubAllClient.receiveMessages().onBackpressureBuffer(1000)
                 .flatMap(message -> {
-                    if (message.getCorrelationId().equals("deadLetterQueue1")) {
+                    if (Objects.equals(message.getCorrelationId(), "deadLetterQueue1")) {
                         LOGGER.info("Skipping dead letter message in ALL queue");
                         return Mono.empty();
                     }
@@ -113,6 +117,7 @@ public class AzureServiceBusConsumer {
                 .doOnError(e -> {
                     LOGGER.error("Received error from topic sub Dead", e);
                 })
+                .subscribeOn(Schedulers.boundedElastic())
                 .subscribe();
     }
 
